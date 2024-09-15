@@ -1,63 +1,53 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
 body {
-    background-color:lavender;
     font-family: Arial, sans-serif;
-    margin: 20px;
+    background-color: #f0f4f8;
+    padding: 20px;
+    text-align: center;
 }
 
 h1 {
-    text-align: center;
+    color: #333;
+    margin-bottom: 20px;
 }
 
-form {
-    text-align: center;
+.converter {
+    display: flex;
+    justify-content: center;
     align-items: center;
+    gap: 10px;
     margin-bottom: 20px;
 }
 
 label {
-    display: block;
-    margin: 10px 0 5px;
+    font-weight: bold;
+    color: #333;
+    margin-right: 5px;
 }
 
-input[type="file"] {
-    margin-bottom: 10px;
-}
-
-button {
-    border-radius: 20px;
-    display: inline-block;
-    margin: 10px 0;
-    padding: 10px 20px;
-    font-size: 16px;
-    color: blue;
-    background-color: aqua;
-}
-
-#results {
-    text-align: center;
-    margin-top: 20px;
+select {
+    padding: 10px;
+    width: 150px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
 }
 
 table {
-    width: 100%;
+    margin: 0 auto;
     border-collapse: collapse;
 }
 
-table, th, td {
-    border: 1px solid #ddd;
-}
-
 th, td {
-    padding: 8px;
-    text-align: center;
+    padding: 10px;
+    border: 1px solid #333;
 }
 
-th {
-    background-color: #f4f4f4;
-}
-div h2{
-    color: green;
-}
-.tableh{
-    background-color: red;
+h2 {
+    color: #333;
+    margin-top: 20px;
 }
