@@ -1,130 +1,61 @@
-document.getElementById('uploadForm').addEventListener('submit', async (event) => {
-    event.preventDefault();
+function generateTruthTable() {
+    const inputSize = parseInt(document.getElementById('inputSize').value);
+    const gateType = document.getElementById('gateType').value;
+    const truthTableBody = document.querySelector('#truthTable tbody');
+    const input3Header = document.getElementById('input3Header');
 
-    const groupFile = document.getElementById('groupFile').files[0];
-    const roomFile = document.getElementById('roomFile').files[0];
+    // Clear the previous table content
+    truthTableBody.innerHTML = '';
 
-    if (!groupFile || !roomFile) {
-        alert('Please upload both CSV files.');
-        return;
+    // Show/Hide the third input column based on input size
+    if (inputSize === 3) {
+        input3Header.style.display = 'table-cell';
+    } else {
+        input3Header.style.display = 'none';
     }
 
-    try {
-        const groupData = await parseCSV(groupFile);
-        const roomData = await parseCSV(roomFile);
+    // Generate truth table for 2 or 3 inputs
+    const rows = inputSize === 2 ? 4 : 8;
 
-        const groups = parseGroupData(groupData);
-        const rooms = parseRoomData(roomData);
+    for (let i = 0; i < rows; i++) {
+        let input1 = (i >> (inputSize - 1)) & 1;
+        let input2 = (i >> (inputSize - 2)) & 1;
+        let input3 = inputSize === 3 ? (i >> (inputSize - 3)) & 1 : null;
 
-        // Separate boys and girls
-        const boysGroups = groups.filter(group => group.gender.includes('Boy'));
-        const girlsGroups = groups.filter(group => group.gender.includes('Girl'));
+        let output = calculateOutput(gateType, input1, input2, input3, inputSize);
 
-        const boysRooms = rooms.filter(room => room.gender.includes('Boy'));
-        const girlsRooms = rooms.filter(room => room.gender.includes('Girl'));
-
-        const boysAllocation = allocateRooms(boysGroups, boysRooms);
-        const girlsAllocation = allocateRooms(girlsGroups, girlsRooms);
-
-        const allocation = [...boysAllocation, ...girlsAllocation];
-
-        displayResults(allocation);
-        createDownloadLink(allocation);
-
-    } catch (error) {
-        console.error('Error processing files:', error);
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${input1}</td>
+            <td>${input2}</td>
+            ${inputSize === 3 ? `<td>${input3}</td>` : ''}
+            <td>${output}</td>
+        `;
+        truthTableBody.appendChild(row);
     }
-});
-
-async function parseCSV(file) {
-    const text = await file.text();
-    return text.trim().split('\n').map(row => row.split(','));
 }
 
-function parseGroupData(data) {
-    return data.slice(1).map(row => ({
-        groupId: row[0],
-        members: parseInt(row[1], 10),
-        gender: row[2]
-    }));
+function calculateOutput(gateType, input1, input2, input3, inputSize) {
+    let result;
+    switch (gateType) {
+        case 'AND':
+            result = inputSize === 2 ? input1 && input2 : input1 && input2 && input3;
+            break;
+        case 'OR':
+            result = inputSize === 2 ? input1 || input2 : input1 || input2 || input3;
+            break;
+        case 'XOR':
+            result = inputSize === 2 ? input1 ^ input2 : input1 ^ input2 ^ input3;
+            break;
+        case 'NOR':
+            result = inputSize === 2 ? !(input1 || input2) : !(input1 || input2 || input3);
+            break;
+        case 'NAND':
+            result = inputSize === 2 ? !(input1 && input2) : !(input1 && input2 && input3);
+            break;
+    }
+    return result ? 1 : 0;
 }
 
-function parseRoomData(data) {
-    return data.slice(1).map(row => ({
-        hostelName: row[0],
-        roomNumber: row[1],
-        capacity: parseInt(row[2], 10),
-        gender: row[3]
-    }));
-}
-
-function allocateRooms(groups, rooms) {
-    const allocation = [];
-
-    // Sort rooms and groups
-    rooms.sort((a, b) => a.capacity - b.capacity);
-    groups.sort((a, b) => a.members - b.members);
-
-    groups.forEach(group => {
-        let allocated = false;
-        for (let i = 0; i < rooms.length; i++) {
-            const room = rooms[i];
-            if (room.capacity === group.members) {
-                allocation.push({ ...group, hostelName: room.hostelName, roomNumber: room.roomNumber });
-                room.capacity = 0; // Room fully allocated
-                allocated = true;
-                break;
-            } else if (room.capacity > group.members) {
-                allocation.push({ ...group, hostelName: room.hostelName, roomNumber: room.roomNumber, membersAllocated: group.members });
-                room.capacity -= group.members;
-                allocated = true;
-                break;
-            }
-        }
-
-        if (!allocated) {
-            let remainingMembers = group.members;
-            for (let i = 0; i < rooms.length && remainingMembers > 0; i++) {
-                const room = rooms[i];
-                if (room.capacity > 0) {
-                    if (room.capacity >= remainingMembers) {
-                        allocation.push({ ...group, hostelName: room.hostelName, roomNumber: room.roomNumber, membersAllocated: remainingMembers });
-                        room.capacity -= remainingMembers;
-                        remainingMembers = 0;
-                    } else {
-                        allocation.push({ ...group, hostelName: room.hostelName, roomNumber: room.roomNumber, membersAllocated: room.capacity });
-                        remainingMembers -= room.capacity;
-                        room.capacity = 0;
-                    }
-                }
-            }
-        }
-    });
-
-    return allocation;
-}
-
-function displayResults(allocation) {
-    const tableBody = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
-    tableBody.innerHTML = '';
-
-    allocation.forEach(item => {
-        const row = tableBody.insertRow();
-        row.insertCell(0).innerText = item.groupId;
-        row.insertCell(1).innerText = item.hostelName;
-        row.insertCell(2).innerText = item.roomNumber;
-        row.insertCell(3).innerText = item.membersAllocated || item.members;
-    });
-}
-
-function createDownloadLink(allocation) {
-    const csvContent = "data:text/csv;charset=utf-8," +
-        allocation.map(item => `${item.groupId},${item.hostelName},${item.roomNumber},${item.membersAllocated || item.members}`).join("\n");
-
-    const encodedUri = encodeURI(csvContent);
-    const downloadLink = document.getElementById('downloadLink');
-    downloadLink.setAttribute("href", encodedUri);
-    downloadLink.setAttribute("download", "allocation.csv");
-    downloadLink.style.display = 'block';
-    downloadLink.innerText = 'Download CSV';
-}
+// Initialize the table on page load
+window.onload = generateTruthTable;
